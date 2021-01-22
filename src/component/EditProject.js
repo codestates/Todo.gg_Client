@@ -14,11 +14,12 @@ function EditProject({ data, editProjectChange, getProject, setProject }) {
     memberErrorMsg: '',
     inputErrorMsg: '',
     checked: data.end_date === '9999-01-01' ? true : null,
-    isEditing: false
+    isEditing: false,
+    newContributer:[],
+    delContributer:[]
   })
-
   const history = useHistory();
-  const { title, startDate, endDate, team, member, description, memberErrorMsg, inputErrorMsg, checked, isEditing } = state
+  const { title, startDate, endDate, team, member, description, memberErrorMsg, inputErrorMsg, checked, isEditing, newContributer,delContributer } = state
   const isLogin = window.sessionStorage.isLogin
   const changeData = e => { //온체인지 스테이트변경
     const { name, value } = e.target
@@ -73,16 +74,32 @@ function EditProject({ data, editProjectChange, getProject, setProject }) {
       ? setState({ ...state, memberErrorMsg: '이미 포함되어있는 멤버입니다.' })
       : axios.post('https://localhost:4001/user/getOne', { username: member })
         .then((param) => {
-          setState({ ...state, team: [...team, param.data] })
+          setState({ ...state, team: [...team, param.data],newContributer:[...newContributer,{id:param.data.user.id}] })
         })
         .catch(() => {
           setState({ ...state, memberErrorMsg: '일치하는 유저네임이 없습니다.' })
         })
   }
+  const deleteMember = function (e){
+    let newTeam=[];
+    for(let i = 0; i < team.length; i++){
+      if(Number(e.target.name) !== team[i].user.id){
+        newTeam.push(team[i])
+      }
+    }
+    let newAddTeam=[];
+    for(let i = 0; i < newContributer.length; i++){
+      if(Number(e.target.name) !== newContributer[i].id){
+        newAddTeam.push(newContributer[i])
+      }
+    }
+    setState({ ...state, team:newTeam,newContributer:newAddTeam,delContributer:[...delContributer,{id:e.target.name}] })
+  }
   const teamList = team.length > 0 && team.map(ele => {
     return <div key={ele.user.id}>
       <img className='hi' src={ele.user.profile}></img>
       <span>{ele.user.username}</span>
+      {isEditing && <button name={ele.user.id} onClick={deleteMember}>-</button>}
     </div>
   })
   const addProject = function () {
@@ -92,7 +109,8 @@ function EditProject({ data, editProjectChange, getProject, setProject }) {
           title: title,
           startDate: startDate,
           endDate: !checked ? endDate : '9999-01-01',
-          member: team,
+          newContributer:newContributer,
+          delContributer:delContributer,
           description: description
         },
           {
@@ -132,7 +150,6 @@ function EditProject({ data, editProjectChange, getProject, setProject }) {
           ? <input type='date' name='startDate' value={startDate} onChange={changeData}></input>
           : <p>{startDate}</p>
         }
-
         {isEditing
           ?//수정화면일 때
           <>
